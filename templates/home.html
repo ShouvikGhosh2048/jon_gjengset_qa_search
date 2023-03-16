@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Jon Gjengset QA Search</title>
+        <style>
+            * {
+                font-family: monospace;
+            }
+
+            body {
+                max-width: 500px;
+                padding: 5px;
+                margin: auto;
+            }
+
+            h1 {
+                text-align: center;
+            }
+
+            form {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            input[type="text"] {
+                min-width: 75%;
+                padding: 5px;
+            }
+
+            footer {
+                display: flex;
+                justify-content: space-around;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <h1>Jon Gjengset QA Search</h1>
+        </header>
+        <form>
+            <input type="text" name="search" value="{{ search }}"/>
+            <input type="submit" value="Search"/>
+        </form>
+        <main>
+            {% for video in videos %}
+                <h2>{{ video.title }}</h2>
+                <ul>
+                    {% for question in video.questions %}
+                        <li><a href="{{ question.url }}">{{ question.text }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endfor %}
+        </main>
+        <footer>
+            <span>Made with Rust</span>
+            <a href="https://github.com/ShouvikGhosh2048/jon_gjengset_qa_search">Github</a>
+        </footer>
+    </body>
+</html>
