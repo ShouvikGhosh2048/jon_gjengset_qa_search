@@ -1,8 +1,13 @@
 use askama::Template;
-use axum::{extract::Query, response::Html, routing::get, Router};
+use axum::{
+    extract::{Query, State},
+    response::Html,
+    routing::get,
+    Router,
+};
+use reqwest::Client;
 use serde::Deserialize;
-
-const YOUTUBE_API_URL: &str = include_str!("../youtube_api_url.txt");
+use std::sync::Arc;
 
 // Youtube types for deserializing from API.
 // https://stackoverflow.com/a/25877389
@@ -54,7 +59,7 @@ struct GetVideosQuery {
     search: Option<String>,
 }
 
-// Taken from once_cell docs 
+// Taken from once_cell docs
 macro_rules! regex {
     ($re:literal $(,)?) => {{
         static RE: once_cell::sync::OnceCell<regex::Regex> = once_cell::sync::OnceCell::new();
@@ -62,20 +67,26 @@ macro_rules! regex {
     }};
 }
 
-#[tokio::main]
-async fn main() {
-    let app = Router::new().route("/", get(get_videos));
-    axum::Server::bind(&"0.0.0.0:3000".parse().unwrap())
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+#[shuttle_runtime::main]
+pub async fn axum(
+    #[shuttle_secrets::Secrets] secrets: shuttle_secrets::SecretStore,
+) -> shuttle_axum::ShuttleAxum {
+    let shared_state = Arc::new(secrets.get("YOUTUBE_API_URL").unwrap());
+    let app = Router::new()
+        .route("/", get(get_videos))
+        .with_state(shared_state);
+    Ok(app.into())
 }
 
-async fn get_videos(Query(params): Query<GetVideosQuery>) -> Html<String> {
-    let items = match reqwest::get(YOUTUBE_API_URL).await {
-        Err(_) => return Html("Couldn't fetch the videos from the youtube API".to_string()),
+async fn get_videos(
+    State(youtube_api_url): State<Arc<String>>,
+    Query(params): Query<GetVideosQuery>,
+) -> Html<String> {
+    let ctx = Client::new().get(&*youtube_api_url);
+    let items = match ctx.send().await {
+        Err(_) => return Html("Couldn't fetch the videos from the youtube API1".to_string()),
         Ok(response) => match response.json::<YoutubeItems>().await {
-            Err(_) => return Html("Couldn't fetch the videos from the youtube API".to_string()),
+            Err(_) => return Html("Couldn't fetch the videos from the youtube API2".to_string()),
             Ok(items) => items,
         },
     };
